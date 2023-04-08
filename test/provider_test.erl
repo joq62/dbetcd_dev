@@ -42,6 +42,7 @@ read_specs_test(Node)->
     io:format("Start ~p~n",[{?MODULE,?FUNCTION_NAME}]),
     
     AllProviders=lists:sort(rpc:call(Node,db_provider_spec,get_all_id,[],5000)),
+%    io:format("AllProviders ~p~n",[{AllProviders,?MODULE,?FUNCTION_NAME}]),
     true=lists:member("kube",AllProviders),
 
    {"kube","kube","0.1.0","kube",kube,"kube","kube","a_cookie",

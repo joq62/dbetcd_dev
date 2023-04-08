@@ -7,15 +7,15 @@
 
 %% Gen server Api ------------------------------------------------------------------------------
 
-%% Provider:start()
--define(Provider_Start(Node,RpcTimeout),
-	rpc:call(Node,Provider,start,[?Sender],RpcTimeout)).
+%% dbetcd:start()
+-define(PDbEtcd_Start(Node,RpcTimeout),
+	rpc:call(Node,dbetcd,start,[?Sender],RpcTimeout)).
 
-%% Provider:stop()
--define(Provider_Stop(Node,RpcTimeout),
-	rpc:call(Node,Provider,stop,[?Sender],RpcTimeout)).
+%% dbetcd:stop()
+-define(DbEtcd_Stop(Node,RpcTimeout),
+	rpc:call(Node,dbetcd,stop,[?Sender],RpcTimeout)).
 
 
-%% Provider:ping()
--define(Provider_Ping(Node,RpcTimeout),
-	rpc:call(Node,Provider,ping,[?Sender],RpcTimeout)).
+%% dbetcd:ping()
+-define(DbEtcd_Ping(Node,RpcTimeout),
+	rpc:call(Node,dbetcd,ping,[?Sender],RpcTimeout)).

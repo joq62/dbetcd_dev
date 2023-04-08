@@ -61,14 +61,15 @@ test_1()->
     ['c1@c50','do_test@c50']=lists:sort(rpc:call(N1,mnesia,system_info,[db_nodes],5000)),
     
     [schedule]=rpc:call(N1,db_lock,read_all,[],5000),
-    true=rpc:call(N1,db_lock,is_open,[schedule,1000],5000),
+    {ok,TransActionsId_1}=rpc:call(N1,db_lock,try_lock,[schedule,1000],5000),
     timer:sleep(500),
-    false=rpc:call(N1,db_lock,is_open,[schedule,1000],5000),
+    locked=rpc:call(N1,db_lock,try_lock,[schedule,1000],5000),
     timer:sleep(600),
-    true=rpc:call(N1,db_lock,is_open,[schedule,1000],5000),
-    
+    {ok,TransActionsId_2}=rpc:call(N1,db_lock,try_lock,[schedule,1000],5000),
+    locked=rpc:call(N1,db_lock,try_lock,[schedule,1000],5000),
+    ok=rpc:call(N1,db_lock,unlock,[schedule,TransActionsId_2],5000),
     io:format("N1 dist OK! ~p~n",[{?MODULE,?LINE}]),
-    timer:sleep(1050),
+    
 
     %% N2 -----------------------------------------------------------------------------
     ok=rpc:call(N2,application,load,[dbetcd],5000),
@@ -80,15 +81,17 @@ test_1()->
     ['c1@c50','c2@c50','do_test@c50']=lists:sort(rpc:call(N2,mnesia,system_info,[db_nodes],5000)),
     
     [schedule]=rpc:call(N2,db_lock,read_all,[],5000),
-    true=rpc:call(N2,db_lock,is_open,[schedule,1000],5000),
-    false=rpc:call(N1,db_lock,is_open,[schedule,1000],5000),
+    {ok,TransActionsId_20}=rpc:call(N2,db_lock,try_lock,[schedule,1000],5000),
+    timer:sleep(500),
+    locked=rpc:call(N1,db_lock,try_lock,[schedule,1000],5000),
+    locked=rpc:call(N2,db_lock,try_lock,[schedule,1000],5000),
     timer:sleep(600),
-    false=rpc:call(N2,db_lock,is_open,[schedule,1000],5000),
-    timer:sleep(600),
-    true=rpc:call(N1,db_lock,is_open,[schedule,1000],5000),
-    false=rpc:call(N2,db_lock,is_open,[schedule,1000],5000),
+    {ok,TransActionsId_21}=rpc:call(N2,db_lock,try_lock,[schedule,1000],5000),
+    locked=rpc:call(N1,db_lock,try_lock,[schedule,1000],5000),
+    locked=rpc:call(N2,db_lock,try_lock,[schedule,1000],5000),
+    ok=rpc:call(N2,db_lock,unlock,[schedule,TransActionsId_21],5000),
     io:format("N2 dbetcd OK! ~p~n",[{?MODULE,?LINE}]),
-    timer:sleep(1050),
+
 
   %% N3 -----------------------------------------------------------------------------------
     ok=rpc:call(N3,application,load,[dbetcd],5000),
@@ -100,26 +103,28 @@ test_1()->
     ['c1@c50','c2@c50','c3@c50','do_test@c50']=lists:sort(rpc:call(N3,mnesia,system_info,[db_nodes],5000)),
     
     [schedule]=rpc:call(N3,db_lock,read_all,[],5000),
-    true=rpc:call(N3,db_lock,is_open,[schedule,1000],5000),
-    false=rpc:call(N1,db_lock,is_open,[schedule,1000],5000),
-    false=rpc:call(N2,db_lock,is_open,[schedule,1000],5000),
+    {ok,TransActionsId_30}=rpc:call(N3,db_lock,try_lock,[schedule,1000],5000),
+    timer:sleep(500),
+    locked=rpc:call(N1,db_lock,try_lock,[schedule,1000],5000),
+    locked=rpc:call(N2,db_lock,try_lock,[schedule,1000],5000),
+    locked=rpc:call(N3,db_lock,try_lock,[schedule,1000],5000),
     timer:sleep(600),
-    false=rpc:call(N3,db_lock,is_open,[schedule,1000],5000),
-    timer:sleep(600),
-    true=rpc:call(N2,db_lock,is_open,[schedule,1000],5000),
-    false=rpc:call(N1,db_lock,is_open,[schedule,1000],5000),
-    false=rpc:call(N3,db_lock,is_open,[schedule,1000],5000),
+    {ok,TransActionsId_31}=rpc:call(N3,db_lock,try_lock,[schedule,1000],5000),
+    locked=rpc:call(N1,db_lock,try_lock,[schedule,1000],5000),
+    locked=rpc:call(N2,db_lock,try_lock,[schedule,1000],5000),
+    locked=rpc:call(N3,db_lock,try_lock,[schedule,1000],5000),
+    ok=rpc:call(N3,db_lock,unlock,[schedule,TransActionsId_31],5000),
     io:format("N3 dbetcd OK! ~p~n",[{?MODULE,?LINE}]),
-    timer:sleep(3050),
   
  %% N4 -----------------------------------------------------------------------------------------
    %% kill N3 
     io:format("kill N3  ~p~n",[{?MODULE,?FUNCTION_NAME,?LINE}]),
     [schedule]=rpc:call(N3,db_lock,read_all,[],5000),
-    true=rpc:call(N3,db_lock,is_open,[schedule,3000],5000),
+    {ok,TransActionsId_40}=rpc:call(N3,db_lock,try_lock,[schedule,3000],5000),
     rpc:call(N3,init,stop,[],5000),
     true=vm:check_stopped_node(N3),
-    false=rpc:call(N1,db_lock,is_open,[schedule,3000],5000),
+    locked=rpc:call(N1,db_lock,try_lock,[schedule,3000],5000),
+    locked=rpc:call(N2,db_lock,try_lock,[schedule,3000],5000),
     
     %% restart N3 
     {ok,N3}=test_nodes:start_slave("c3"),
@@ -134,12 +139,16 @@ test_1()->
     pong=rpc:call(N3,dbetcd,ping,[],5000),
     io:format("N3 restarted  ~p~n",[{?MODULE,?LINE}]),
 
-    false=rpc:call(N3,db_lock,is_open,[schedule,3000],5000),
+    locked=rpc:call(N1,db_lock,try_lock,[schedule,3000],5000),
+    locked=rpc:call(N2,db_lock,try_lock,[schedule,3000],5000),
+    locked=rpc:call(N3,db_lock,try_lock,[schedule,3000],5000),
     timer:sleep(3000),
-    true=rpc:call(N3,db_lock,is_open,[schedule,3000],5000),
+    {ok,TransActionsId_41}=rpc:call(N3,db_lock,try_lock,[schedule,1000],5000),
+    locked=rpc:call(N1,db_lock,try_lock,[schedule,1000],5000),
+    locked=rpc:call(N2,db_lock,try_lock,[schedule,1000],5000),
+    locked=rpc:call(N3,db_lock,try_lock,[schedule,1000],5000),
+    ok=rpc:call(N3,db_lock,unlock,[schedule,TransActionsId_41],5000),
     
-    
-
     io:format("restart N3 OK!  ~p~n",[{?MODULE,?LINE}]),
 
   
