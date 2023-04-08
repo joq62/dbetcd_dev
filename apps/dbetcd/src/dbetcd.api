@@ -1,0 +1,21 @@
+#	include log.api -include("sender.hrl").
+%%%% Provider Api -----------------------------------------------------------------------------
+
+%% Module:Function(Args)
+-define(Module_Function,(Args,Node,RpcTimeout),
+	rpc:call(Node,Module,Function,[Args,?Sender],RpcTimeout)).
+
+%% Gen server Api ------------------------------------------------------------------------------
+
+%% Provider:start()
+-define(Provider_Start(Node,RpcTimeout),
+	rpc:call(Node,Provider,start,[?Sender],RpcTimeout)).
+
+%% Provider:stop()
+-define(Provider_Stop(Node,RpcTimeout),
+	rpc:call(Node,Provider,stop,[?Sender],RpcTimeout)).
+
+
+%% Provider:ping()
+-define(Provider_Ping(Node,RpcTimeout),
+	rpc:call(Node,Provider,ping,[?Sender],RpcTimeout)).
